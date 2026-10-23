@@ -1,5 +1,6 @@
+style>
     :root {
-      --bg: #20201f;
+      --bg: #f6f5f1;
       --fg: #1d1d1b;
       --mut: #6b6a64;
       --card: #fff;
@@ -9,7 +10,7 @@
       --act: #e3200c;
       --ok: #2f9e5b;
       --floor: #ece9df;
-      color-scheme: dark;
+      color-scheme: light;
     }
     @media (prefers-color-scheme: dark) {
       :root:not([data-theme="light"]) {
@@ -98,3 +99,4 @@
       footer { flex-direction: column; align-items: center; text-align: center; }
     }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; } }
+  </style>
