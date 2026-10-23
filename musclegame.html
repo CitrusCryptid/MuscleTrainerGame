@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Muscle Mechanics</title>
+    <link rel="stylesheet" href="musclegame.css">
+    <script src="Sidebar.JS" defer></script>
+</head>
+
+<body>
+    <main>
+        <h1>Muscle Mechanics</h1>
+        <p class="sub">Hold each muscle’s key to contract it. Gravity never stops pulling, so choose the right muscles
+            at the right time.</p>
+        <div class="tabs" id="tabs"></div>
+        <div class="stage">
+            <canvas id="c" width="640" height="540"></canvas>
+            <div class="hud">
+                <div class="goal" id="goal"></div>
+                <div><b id="t">0.0</b>s</div>
+            </div>
+            <div id="ov">
+                <div class="m" id="med"></div>
+                <h2 id="mt" style="margin:0"></h2>
+                <div id="mi" style="color:var(--mut)"></div>
+                <div class="row"><button id="retry">Retry</button><button id="other">Next task</button></div>
+            </div>
+        </div>
+        <div class="keys" id="keys"></div>
+        <div class="medals" id="info"></div>
+    </main>
+    <script>
+        const cv = document.getElementById('c'), g = cv.getContext('2d'), $ = id => document.getElementById(id);
+        const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+        const sin = Math.sin, cos = Math.cos, cl = (x, a, b) => Math.max(a, Math.min(b, x));
+        const FL = 500, U = 100, LF = 95, T = 110, SH = 110, TO = 115, UA = U + LF;
+        const P2 = (P, Q, t, o) => { const dx = Q[0] - P[0], dy = Q[1] - P[1], l = Math.hypot(dx, dy) || 1; return [P[0] + dx * t + dy / l * o, P[1] + dy * t - dx / l * o] };
+        const pol = (P, a, l) => [P[0] + sin(a) * l, P[1] + cos(a) * l];
+        const armPts = (S, u, el) => { const E = pol(S, u, U); return [S, E, pol(E, u + el, LF)] };
+        function stand(l = 0) {
+            const hip = [240, FL - 220], sh = [hip[0] + TO * sin(l), hip[1] - TO * cos(l)];
+            const lg = d => [[hip[0] + d, hip[1]], [240 + d, FL - 110], [240 + d, FL], [270 + d, FL - 2]];
+            return { hip, sh, l, legs: [lg(-8), lg(0)], arms: [], mus: [] }
+        }
+        const plate = (p, r) => { g.fillStyle = css('--fg'); g.globalAlpha = .85; g.beginPath(); g.arc(p[0], p[1], r, 0, 7); g.fill(); g.globalAlpha = 1; g.fillStyle = css('--card'); g.beginPath(); g.arc(p[0], p[1], r * .25, 0, 7); g.fill() };
+
+        function phys(s, tq, cfg, dt) { for (const j in cfg) { const [K, c, lo, hi] = cfg[j], w = 'w' + j; s[w] = (s[w] || 0) + (tq[j] * K - c * (s[w] || 0)) * dt; s[j] += s[w] * dt; if (s[j] < lo || s[j] > hi) { s[j] = cl(s[j], lo, hi); s[w] = 0 } } }
+
+        function lowerBody(dead) {
+            const G = dead ? 1.35 : 1;
+            return {
+                name: dead ? 'Deadlift' : 'Squat', med: dead ? [7, 11, 17] : [6, 10, 16],
+                muscles: [['q', 'Quadriceps', 'Straightens knee'], ['w', 'Gluteus maximus', 'Extends hip'], ['e', 'Hamstrings', 'Extends hip'], ['r', 'Erector spinae', 'Keeps back upright']],
+                init: () => dead ? { k: 1.6, l: 1 } : { k: 0, l: 0 },
+                cfg: { k: [7, 3, 0, dead ? 1.65 : 2.2], l: [7, 3, 0, dead ? 1.05 : 1.2] },
+                tq: (s, A) => ({ k: -A.q - .55 * A.w - .25 * A.e + G * (.3 + .6 * sin(s.k)), l: G * (.1 * s.k + .45 * sin(s.l)) - A.r - .5 * A.w - .5 * A.e }),
+                geo(s) {
+                    const a = .45 * s.k, t = .55 * s.k, An = [240, FL], Kn = [An[0] + SH * sin(a), An[1] - SH * cos(a)], Hp = [Kn[0] - T * sin(t), Kn[1] - T * cos(t)], Sh = [Hp[0] + TO * sin(s.l), Hp[1] - TO * cos(s.l)];
+                    const leg = d => [Hp, Kn, An, [An[0] + 30, An[1] - 2]].map(p => [p[0] + d, p[1]]);
+                    const B = { hip: Hp, sh: Sh, l: s.l, legs: [leg(-8), leg(0)] }; let hand;
+                    if (dead) { const bx = 268; hand = [bx, Math.min(Sh[1] + Math.sqrt(Math.max(0, UA * UA - (Sh[0] - bx) ** 2)), FL - 26)]; const m = [(Sh[0] + hand[0]) / 2, (Sh[1] + hand[1]) / 2]; B.arms = [[Sh, m, hand], [Sh, m, hand]]; B.front = () => plate(hand, 24) }
+                    else { hand = [Sh[0] - 4, Sh[1] - 6]; const el = [Sh[0] - 26, Sh[1] + 34]; B.arms = [[Sh, el, hand], [Sh, el, hand]]; B.front = () => plate(hand, 28) }
+                    B.pts = { hip: Hp, hand };
+                    B.mus = [['q', P2(Hp, Kn, .1, 12), P2(Kn, An, .08, 12), 22], ['w', P2(Sh, Hp, .82, -14), P2(Hp, Kn, .35, -12), 28], ['e', P2(Hp, Kn, .05, -12), P2(Kn, An, .18, -10), 17], ['r', P2(Sh, Hp, .12, -14), P2(Sh, Hp, .8, -15), 14]];
+                    return B
+                },
+                stages: dead ? [{ t: 'Stand up with the bar to lockout', ok: s => s.k <= .25 && s.l <= .3, g: { k: 0, l: 0 }, p: 'hand' }, { t: 'Lower the bar back to the floor', ok: s => s.k >= 1.5 && s.l >= .95, g: { k: 1.6, l: 1 }, p: 'hand' }]
+                    : [{ t: 'Squat down: thighs parallel, back upright', ok: s => s.k >= 1.9 && s.l <= 1, g: { k: 2, l: .7 }, p: 'hip' }, { t: 'Drive back up to standing', ok: s => s.k <= .2 && s.l <= .3, g: { k: 0, l: 0 }, p: 'hip' }]
+            }
+        }
+
+        const TASKS = {
+            curl: {
+                name: 'Bicep curl', med: [3.5, 6, 10],
+                muscles: [['q', 'Biceps brachii', 'Bends elbow'], ['w', 'Brachialis', 'Bends elbow'], ['e', 'Triceps brachii', 'Straightens elbow']],
+                init: () => ({ f: 0 }), cfg: { f: [7, 3, 0, 2.6] },
+                tq: (s, A) => ({ f: A.q + .7 * A.w - .9 * A.e - .55 * sin(s.f) }),
+                geo(s) {
+                    const B = stand(0), S = B.sh, a = armPts(S, 0, s.f), E = a[1]; B.arms = [armPts(S, 0, 0), a]; B.pts = { hand: a[2] };
+                    B.mus = [['w', P2(S, E, .45, 6), P2(E, a[2], .22, 5), 13], ['q', P2(S, E, .12, 9), P2(E, a[2], .15, 8), 17], ['e', P2(S, E, .12, -10), P2(E, a[2], 0, -10), 16]];
+                    B.front = () => plate(a[2], 11); return B
+                },
+                stages: [{ t: 'Curl the weight up to the ring', ok: s => s.f >= 2.2, g: { f: 2.2 }, p: 'hand' }, { t: 'Lower it back down', ok: s => s.f <= .25, g: { f: 0 }, p: 'hand' }]
+            },
+            row: {
+                name: 'Row', med: [4, 7, 11],
+                muscles: [['q', 'Latissimus dorsi', 'Pulls arm back'], ['w', 'Rhomboids', 'Squeezes shoulder blade'], ['e', 'Biceps brachii', 'Bends elbow'], ['r', 'Triceps brachii', 'Straightens elbow']],
+                init: () => ({ sh: 0, el: 0 }), cfg: { sh: [7, 3, 0, 1.7], el: [7, 3, 0, 2.5] },
+                tq: (s, A) => ({ sh: A.q + .5 * A.w - .7 * sin(s.sh), el: A.e - .9 * A.r - .5 * sin(s.el - s.sh) }),
+                geo(s) {
+                    const B = stand(1.15), S = B.sh, a = armPts(S, -s.sh, s.el), E = a[1], h = B.hip; B.arms = [armPts(S, 0, 0), a]; B.pts = { hand: a[2] };
+                    B.mus = [['q', P2(S, h, .8, -14), P2(S, E, .25, -4), 24], ['w', P2(S, h, .1, -14), P2(S, h, .55, -14), 13], ['e', P2(S, E, .1, 9), P2(E, a[2], .15, 8), 15], ['r', P2(S, E, .1, -10), P2(E, a[2], 0, -9), 16]];
+                    B.front = () => plate(a[2], 11); return B
+                },
+                stages: [{ t: 'Row the weight up to your ribs', ok: s => s.sh >= 1.25 && s.el >= 1.1, g: { sh: 1.3, el: 1.3 }, p: 'hand' }, { t: 'Lower the weight', ok: s => s.sh <= .2 && s.el <= .3, g: { sh: 0, el: 0 }, p: 'hand' }]
+            },
+            pullup: {
+                name: 'Pull-up', med: [5, 8, 13], floor: 530,
+                muscles: [['q', 'Latissimus dorsi', 'Pulls body up'], ['w', 'Biceps brachii', 'Bends elbow'], ['e', 'Brachialis', 'Bends elbow'], ['r', 'Lower trapezius', 'Depresses shoulder']],
+                init: () => ({ e: 0 }), cfg: { e: [6, 3, 0, 2.65] },
+                tq: (s, A) => ({ e: A.q + .9 * A.w + .7 * A.e + .4 * A.r - (1 + .9 * sin(s.e)) }),
+                geo(s) {
+                    const Hd = [260, 56], E = [260, 56 + LF], Sh = [E[0] - .2 * U * sin(s.e), E[1] + U * cos(s.e)], hip = [Sh[0], Sh[1] + TO], K = [hip[0], hip[1] + T], A = pol(K, -1.2, SH), leg = d => [hip, K, A, [A[0] - 8, A[1] + 14]].map(p => [p[0] + d, p[1]]);
+                    const ar = [Sh, E, Hd], head = [Sh[0] + 22, Sh[1] - 48];
+                    return {
+                        hip, sh: Sh, l: 0, head, legs: [leg(-6), leg(0)], arms: [ar, ar], pts: { head },
+                        back: () => { g.strokeStyle = css('--mut'); g.lineWidth = 6; g.lineCap = 'round'; g.beginPath(); g.moveTo(150, 56); g.lineTo(260, 56); g.moveTo(150, 56); g.lineTo(150, 530); g.stroke() },
+                        front: () => { g.fillStyle = css('--mut'); g.beginPath(); g.arc(260, 56, 6, 0, 7); g.fill() },
+                        mus: [['q', P2(Sh, hip, .7, -13), P2(Sh, E, .3, -6), 26], ['w', P2(Sh, E, .15, 9), P2(E, Hd, .15, -8), 15], ['e', P2(Sh, E, .55, 6), P2(E, Hd, .2, -5), 12], ['r', P2(Sh, hip, .25, -13), P2(Sh, hip, .55, -13), 14]]
+                    }
+                },
+                stages: [{ t: 'Pull up until your chin clears the bar', ok: s => s.e >= 2.4, g: { e: 2.5 }, p: 'head' }, { t: 'Lower yourself back to a hang', ok: s => s.e <= .3, g: { e: 0 }, p: 'head' }]
+            },
+            punch: {
+                name: 'Punch', med: [4, 7, 11], bag: { p: 'hand', dx: 35 },
+                muscles: [['q', 'Anterior deltoid', 'Lifts arm'], ['w', 'Pectoralis major', 'Drives arm forward'], ['e', 'Triceps brachii', 'Straightens elbow'], ['r', 'Biceps brachii', 'Bends elbow'], ['a', 'Serratus anterior', 'Extends reach']],
+                init: () => ({ sh: 0, el: 0 }), cfg: { sh: [8, 3, -.2, 1.7], el: [10, 3, 0, 2.5] },
+                tq: (s, A) => ({ sh: A.q + .8 * A.w + .4 * A.a - .5 * (sin(s.sh) + .8 * sin(s.sh + s.el)), el: A.r - A.e - .45 * sin(s.sh + s.el) }),
+                geo(s) {
+                    const B = stand(0), S = B.sh, a = armPts(S, s.sh, s.el), E = a[1]; B.arms = [armPts(S, .6, 2), a]; B.pts = { hand: a[2] };
+                    B.mus = [['w', [S[0] + 18, S[1] + 42], P2(S, E, .18, 6), 24], ['a', [S[0] + 10, S[1] + 56], [S[0] - 8, S[1] + 16], 13], ['q', [S[0] + 2, S[1] - 6], P2(S, E, .4, 0), 21], ['e', P2(S, E, .1, -10), P2(E, a[2], 0, -9), 16], ['r', P2(S, E, .1, 9), P2(E, a[2], .15, 8), 15]];
+                    return B
+                },
+                stages: [{ t: 'Guard up: fist by your chin', ok: s => s.sh >= .45 && s.el >= 1.7, g: { sh: .6, el: 2 }, p: 'hand' }, { t: 'Throw the punch at the bag', ok: s => s.sh >= 1.35 && s.el <= .3, g: { sh: 1.45, el: .1 }, p: 'hand' }]
+            },
+            kick: {
+                name: 'Front kick', med: [6, 10, 16], bag: { p: 'foot', dx: 52 },
+                muscles: [['q', 'Iliopsoas', 'Lifts thigh'], ['w', 'Rectus femoris', 'Lifts thigh + straightens knee'], ['e', 'Vastus (quads)', 'Straightens knee'], ['r', 'Hamstrings', 'Bends knee'], ['a', 'Gluteus maximus', 'Lowers thigh']],
+                init: () => ({ h: 0, k: 0 }), cfg: { h: [7, 3, -.3, 2], k: [9, 3, 0, 2.5] },
+                tq: (s, A) => { const a = s.h - s.k; return { h: A.q + .6 * A.w - A.a - .4 * A.r - .55 * (sin(s.h) + .8 * sin(a)), k: A.r - .9 * A.e - .5 * A.w + .45 * sin(a) } },
+                geo(s) {
+                    const B = stand(-.1), S = B.sh, hip = B.hip, a = s.h - s.k, K = pol(hip, s.h, T), F = pol(K, a, SH);
+                    B.legs[1] = [hip, K, F, [F[0] + cos(a) * 26, F[1] - sin(a) * 26]]; B.arms = [armPts(S, .5, 2), armPts(S, .6, 2)]; B.pts = { knee: K, foot: F };
+                    B.mus = [['q', [hip[0] + 10, hip[1] - 34], P2(hip, K, .22, 6), 14], ['w', [hip[0] + 14, hip[1] - 8], P2(K, F, .04, 11), 15], ['e', P2(hip, K, .38, 8), P2(K, F, .05, 11), 21], ['r', P2(hip, K, .08, -11), P2(K, F, .18, -10), 16], ['a', [hip[0] - 18, hip[1] - 30], P2(hip, K, .32, -12), 26]];
+                    return B
+                },
+                stages: [{ t: 'Chamber: lift the knee, keep it bent', ok: s => s.h >= 1.25 && s.k >= .9, g: { h: 1.3, k: 1.1 }, p: 'knee' }, { t: 'Strike: snap the leg straight into the bag', ok: s => s.k <= .2 && s.h >= 1.1, g: { h: 1.3, k: .05 }, p: 'foot' }]
+            },
+            squat: lowerBody(false), deadlift: lowerBody(true)
+        };
+
+        function limb(a, b, w1, w2, c) {
+            const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1, nx = -dy / l, ny = dx / l; g.fillStyle = c; g.beginPath(); g.moveTo(a[0] + nx * w1 / 2, a[1] + ny * w1 / 2); g.lineTo(b[0] + nx * w2 / 2, b[1] + ny * w2 / 2); g.lineTo(b[0] - nx * w2 / 2, b[1] - ny * w2 / 2); g.lineTo(a[0] - nx * w1 / 2, a[1] - ny * w1 / 2); g.fill();
+            g.beginPath(); g.arc(a[0], a[1], w1 / 2, 0, 7); g.fill(); g.beginPath(); g.arc(b[0], b[1], w2 / 2, 0, 7); g.fill()
+        }
+        function human(P) {
+            const sk = css('--skin'), s2 = css('--skin2'), sh = css('--short');
+            const leg = (L, c) => { limb(L[0], L[1], 38, 27, c); limb(L[1], L[2], 26, 17, c); limb(L[2], L[3], 15, 10, c) };
+            const arm = (A, c) => { limb(A[0], A[1], 23, 18, c); limb(A[1], A[2], 18, 13, c); g.fillStyle = c; g.beginPath(); g.arc(A[2][0], A[2][1], 9, 0, 7); g.fill() };
+            const hd = P.head || [P.sh[0] + sin(P.l * .7) * 44, P.sh[1] - cos(P.l * .7) * 44];
+            arm(P.arms[0], s2); leg(P.legs[0], s2);
+            limb(P.sh, P.hip, 48, 40, sk); limb(P.sh, hd, 17, 17, sk);
+            g.fillStyle = sk; g.beginPath(); g.arc(hd[0], hd[1], 21, 0, 7); g.fill();
+            g.fillStyle = css('--hair'); g.beginPath(); g.arc(hd[0], hd[1], 22, .75 * Math.PI, 1.85 * Math.PI); g.fill();
+            g.fillStyle = s2; g.beginPath(); g.arc(hd[0] - 3, hd[1] + 3, 5, 0, 7); g.fill();
+            g.fillStyle = css('--fg'); g.beginPath(); g.arc(hd[0] + 10, hd[1] - 1, 2.5, 0, 7); g.fill();
+            g.fillStyle = sk; g.beginPath(); g.moveTo(hd[0] + 19, hd[1] - 2); g.lineTo(hd[0] + 26, hd[1] + 5); g.lineTo(hd[0] + 18, hd[1] + 7); g.fill();
+            g.strokeStyle = css('--fg'); g.lineWidth = 1.5; g.beginPath(); g.moveTo(hd[0] + 8, hd[1] + 13); g.lineTo(hd[0] + 16, hd[1] + 12); g.stroke();
+            leg(P.legs[1], sk);
+            P.legs.forEach(L => { limb(P.hip, P2(L[0], L[1], .5, 0), 42, 36, sh) });
+            arm(P.arms[1], sk)
+        }
+        function spindle(a, b, w, act, key) {
+            const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1, nx = -dy / l, ny = dx / l, W = w * (1 + .55 * act) * .7;
+            const pth = f => { const p = new Path2D(), q = W * f; p.moveTo(a[0], a[1]); p.bezierCurveTo(a[0] + dx * .2 + nx * q, a[1] + dy * .2 + ny * q, b[0] - dx * .2 + nx * q, b[1] - dy * .2 + ny * q, b[0], b[1]); p.bezierCurveTo(b[0] - dx * .2 - nx * W, b[1] - dy * .2 - ny * W, a[0] + dx * .2 - nx * W, a[1] + dy * .2 - ny * W, a[0], a[1]); return p }, p = pth(1);
+            g.fillStyle = css('--mus'); g.fill(p); g.globalAlpha = act; g.fillStyle = css('--act'); g.fill(p); g.globalAlpha = 1;
+            g.strokeStyle = css('--musd'); g.lineWidth = 1.5; g.stroke(p); g.globalAlpha = .4; g.lineWidth = 1;
+            for (const f of [-.6, 0, .6]) { g.beginPath(); g.moveTo(a[0], a[1]); g.bezierCurveTo(a[0] + dx * .25 + nx * W * f, a[1] + dy * .25 + ny * W * f, b[0] - dx * .25 + nx * W * f, b[1] - dy * .25 + ny * W * f, b[0], b[1]); g.stroke() }
+            g.globalAlpha = 1
+        }
+
+        let task = 'curl', st, stage, start, done, tm, A = {}, held = {}, kb = {}, bag = { a: 0, w: 0 }, bagPos = null;
+        const best = JSON.parse((() => { try { return localStorage.getItem('mm-best') } catch (e) { return null } })() || '{}');
+        function build() {
+            $('tabs').innerHTML = '';
+            for (const k in TASKS) { const b = document.createElement('button'); b.textContent = TASKS[k].name; b.className = k === task ? 'on' : ''; b.onclick = () => { task = k; build(); reset() }; $('tabs').appendChild(b) }
+            $('keys').innerHTML = ''; kb = {}; A = {}; held = {};
+            TASKS[task].muscles.forEach(([k, n, r]) => {
+                const d = document.createElement('div'); d.className = 'key';
+                d.innerHTML = `<span class="cap">${k.toUpperCase()}</span><b>${n}</b><small>${r}</small><i></i>`;
+                const on = e => { e.preventDefault(); held[k] = 1; begin() }, off = () => { held[k] = 0 };
+                d.addEventListener('pointerdown', on);['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => d.addEventListener(ev, off));
+                $('keys').appendChild(d); kb[k] = d.querySelector('i'); A[k] = 0; held[k] = 0
+            });
+            const m = TASKS[task].med, b = best[task];
+            $('info').innerHTML = `🥇 under ${m[0]}s · 🥈 under ${m[1]}s · 🥉 under ${m[2]}s · Space restarts` + (b ? ` · Best: ${b.toFixed(2)}s` : '')
+        }
+        function reset() {
+            const T = TASKS[task]; clearTimeout(tm); st = T.init(); stage = 0; start = null; done = false; bag = { a: 0, w: 0 };
+            bagPos = null; if (T.bag) { const p = T.geo({ ...T.init(), ...T.stages[1].g }).pts[T.bag.p]; bagPos = [p[0] + T.bag.dx, p[1]] }
+            $('ov').style.display = 'none'; for (const k in A) { A[k] = 0; held[k] = 0 } $('t').textContent = '0.0'
+        }
+        function begin() { if (start === null && !done) start = performance.now() }
+        function finish() {
+            done = true; const sec = (performance.now() - start) / 1000, m = TASKS[task].med, i = sec < m[0] ? 0 : sec < m[1] ? 1 : sec < m[2] ? 2 : 3;
+            $('t').textContent = sec.toFixed(1);
+            if (bagPos) bag.w = -4;
+            $('med').textContent = ['🥇', '🥈', '🥉', '—'][i]; $('mt').textContent = ['Gold!', 'Silver', 'Bronze', 'No medal'][i];
+            $('mi').textContent = sec.toFixed(2) + ' seconds' + (i === 3 ? ' · need under ' + m[2] + 's for bronze' : '');
+            if (!best[task] || sec < best[task]) { best[task] = sec; try { localStorage.setItem('mm-best', JSON.stringify(best)) } catch (e) { } build() }
+            tm = setTimeout(() => { $('ov').style.display = 'flex' }, bagPos ? 900 : 150)
+        }
+        $('retry').onclick = reset;
+        $('other').onclick = () => { const k = Object.keys(TASKS); task = k[(k.indexOf(task) + 1) % k.length]; build(); reset() };
+        addEventListener('keydown', e => {
+            if (e.code === 'Space') { e.preventDefault(); reset(); return }
+            const k = e.key.toLowerCase(); if (k in held) { held[k] = 1; begin(); e.preventDefault() }
+        });
+        addEventListener('keyup', e => { const k = e.key.toLowerCase(); if (k in held) held[k] = 0 });
+
+        function drawBag() {
+            const x = bagPos[0], y = bagPos[1], top = y - 80;
+            g.save(); g.translate(x, 6); g.rotate(bag.a);
+            g.strokeStyle = css('--mut'); g.lineWidth = 3; g.beginPath(); g.moveTo(-14, 0); g.lineTo(0, top - 6); g.lineTo(14, 0); g.moveTo(0, 0); g.lineTo(0, top - 6); g.stroke();
+            g.translate(0, top - 6); g.fillStyle = '#b5382b'; g.strokeStyle = '#6e1f17'; g.lineWidth = 2;
+            g.beginPath(); g.roundRect(-27, 6, 54, 160, 14); g.fill(); g.stroke();
+            g.fillStyle = '#2a2a28'; g.fillRect(-27, 46, 54, 10); g.fillRect(-27, 116, 54, 10);
+            g.restore()
+        }
+        function render() {
+            const T = TASKS[task], P = T.geo(st), fl = T.floor || FL;
+            g.clearRect(0, 0, 640, 540);
+            g.fillStyle = css('--floor'); g.fillRect(0, fl, 640, 540 - fl); g.strokeStyle = css('--line'); g.lineWidth = 2; g.beginPath(); g.moveTo(0, fl); g.lineTo(640, fl); g.stroke();
+            if (bagPos) drawBag();
+            if (P.back) P.back();
+            const sg = T.stages[Math.min(stage, 1)], gp = T.geo({ ...T.init(), ...sg.g }).pts[sg.p], pu = 1 + .1 * sin(performance.now() / 160);
+            g.setLineDash([6, 5]); g.strokeStyle = css('--ok'); g.lineWidth = 3; g.beginPath(); g.arc(gp[0], gp[1], 24 * pu, 0, 7); g.stroke(); g.setLineDash([]);
+            human(P);
+            P.mus.forEach(([k, a, b, w]) => spindle(a, b, w, A[k] || 0, k));
+            if (P.front) P.front();
+            g.font = 'bold 11px system-ui'; g.textAlign = 'center'; g.lineWidth = 3; g.strokeStyle = css('--card'); g.fillStyle = css('--fg');
+            P.mus.forEach(([k, a, b]) => { const x = (a[0] + b[0]) / 2, y = (a[1] + b[1]) / 2 + 4; g.strokeText(k.toUpperCase(), x, y); g.fillText(k.toUpperCase(), x, y) })
+        }
+        let last = performance.now();
+        function frame(now) {
+            const dt = Math.min(.033, (now - last) / 1000); last = now; const T = TASKS[task];
+            for (const k in A) { A[k] += ((held[k] ? 1 : 0) - A[k]) * Math.min(1, dt * 10); kb[k].style.width = (A[k] * 100) + '%' }
+            if (!done) {
+                for (let i = 0; i < 2; i++)phys(st, T.tq(st, A), T.cfg, dt / 2);
+                if (start !== null) { $('t').textContent = ((now - start) / 1000).toFixed(1); if (T.stages[stage].ok(st)) { stage++; if (stage >= T.stages.length) finish() } }
+            }
+            bag.w += (-18 * bag.a - 1.5 * bag.w) * dt; bag.a += bag.w * dt;
+            $('goal').textContent = done ? '' : `${Math.min(stage + 1, 2)}/2 · ${T.stages[Math.min(stage, 1)].t}`;
+            render(); requestAnimationFrame(frame)
+        }
+        build(); reset(); requestAnimationFrame(frame);
+    </script>
+</body>
+
+</html>
