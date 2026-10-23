@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f6f5f1">
+  <title>Muscle Mechanics</title>
+  <link rel="stylesheet" href="homepage.css">
+  <script src="Sidebar.JS" defer></script>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M7 8.5 9.5 6l3 3-2 2 3.5 3.5 2-2 3 3-2.5 2.5a4 4 0 0 1-5.7 0l-3.8-3.8a4 4 0 0 1 0-5.7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m4 5 3 3M16.5 15.5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <span>Muscle Mechanics</span>
+      </div>
+      <div class="header-right">
+        <span class="status-text">Interactive movement lab</span>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5 8.6 8.6 0 1 0 20.5 14.2Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <p class="eyebrow">An interactive anatomy game</p>
+        <h1>Muscles in motion.<br><span>Mechanics in action.</span></h1>
+        <p class="lead">Every movement is a team effort. Activate the right muscles, work with gravity, and discover the mechanics behind everyday strength.</p>
+        <div class="cta-wrap">
+          <!-- Update game.html if your existing game file has a different name. -->
+          <a class="start" href="game.html">Start the game
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+        </div>
+        <p class="microcopy">No equipment needed · Just your keyboard</p>
+      </section>
+
+      <section class="how">
+        <div class="section-heading">
+          <h2>How to play</h2>
+          <p>Learn the movement. Find the muscle. Beat the clock.</p>
+        </div>
+        <div class="steps">
+          <article class="step"><span class="num">01</span><h3>Choose a movement</h3><p>Try a bicep curl, squat, punch, front kick, and more.</p></article>
+          <article class="step"><span class="num">02</span><h3>Contract with keys</h3><p>Hold the assigned keys to activate muscles and guide the movement.</p></article>
+          <article class="step"><span class="num">03</span><h3>Earn your medal</h3><p>Finish quickly to earn gold, silver, or bronze. Improve your best time.</p></article>
+        </div>
+        <p class="medal-note"><span>🥇 Gold — fastest</span><span>🥈 Silver</span><span>🥉 Bronze</span><span>Every attempt teaches you something.</span></p>
+      </section>
+    </main>
+
+    <footer>
+      <span>Muscle Mechanics · Interactive anatomy</span>
+      <span>Understand the science behind every move.</span>
+    </footer>
+  </div>
+  <script>
+    const toggle = document.getElementById('themeToggle');
+    toggle.addEventListener('click', () => {
+      const isDark = document.documentElement.dataset.theme !== 'dark';
+      document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
+      document.querySelector('meta[name="theme-color"]').content = isDark ? '#161614' : '#f6f5f1';
+    });
+  </script>
+</body>
+</html>
