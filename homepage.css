@@ -68,7 +68,7 @@
       text-decoration: none; box-shadow: 0 5px 0 rgba(29,29,27,.08);
       transition: transform .16s ease, background .16s ease, box-shadow .16s ease;
     }
-    .start:hover { transform: translateY(-2px); box-shadow: 0 8px 0 rgba(29,29,27,.08); }
+    .start:hover { background: #C0C0C0; color:#FF6700; transform: translateY(-2px); box-shadow: 0 8px 0 rgba(29,29,27,.08); }
     .start:active { transform: translateY(0); }
     .start:focus-visible, button:focus-visible { outline: 3px solid var(--ok); outline-offset: 3px; }
     .start svg { width: 18px; height: 18px; }
