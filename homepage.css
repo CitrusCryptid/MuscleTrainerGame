@@ -1,4 +1,3 @@
-style>
     :root {
       --bg: #f6f5f1;
       --fg: #1d1d1b;
@@ -99,4 +98,3 @@ style>
       footer { flex-direction: column; align-items: center; text-align: center; }
     }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; } }
-  </style>
