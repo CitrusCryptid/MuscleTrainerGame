@@ -9,7 +9,7 @@
       --act: #e3200c;
       --ok: #2f9e5b;
       --floor: #ece9df;
-      color-scheme: light;
+      color-scheme: dark;
     }
     @media (prefers-color-scheme: dark) {
       :root:not([data-theme="light"]) {

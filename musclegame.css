@@ -1,26 +1,6 @@
         :root {
-            --bg: #eaeae7;
-            --fg: #eeece6;
-            --mut: #9a978c;
-            --card: #222220;
-            --line: #383632;
-            --mus: #a85a50;
-            --musd: #6e2a22;
-            --act: #ff4a33;
-            --ok: #4cc77f;
-            --skin: #b98c70;
-            --skin2: #957055;
-            --short: #4a6fa5;
-            --hair: #1d1612;
-            --floor: #2b2a27;
-            color-scheme: dark;
-            box-sizing: border-box;
-            padding-top: env(safe-area-inset-top, 0px);
-            padding-bottom: env(safe-area-inset-bottom, 0px)
-            
-            
             /*Old Light/Dark Mode CSS, Hated it*/
-            /*--bg: #f6f5f1;
+            --bg: #f6f5f1;
             --fg: #1d1d1b;
             --mut: #6b6a64;
             --card: #fff;
@@ -34,12 +14,15 @@
             --short: #3d5a80;
             --hair: #fafafa;
             --floor: #ece9df;
-            color-scheme: light; */
+            color-scheme: light; 
+            box-sizing: border-box;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px)
 
 
         }
 
-        /*@media (prefers-color-scheme:dark) {
+        @media (prefers-color-scheme:dark) {
             :root:not([data-theme="light"]) {
                 --bg: #eaeae7;
                 --fg: #eeece6;
@@ -55,7 +38,7 @@
                 --short: #4a6fa5;
                 --hair: #1d1612;
                 --floor: #2b2a27;
-                color-scheme: dark
+                color-scheme: dark;
             }
         }
 
@@ -75,7 +58,7 @@
             --hair: #1d1612;
             --floor: #2b2a27;
             color-scheme: dark
-        }*/
+        }
 
         * {
             box-sizing: border-box
